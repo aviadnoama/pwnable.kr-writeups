@@ -1,0 +1,5 @@
+- OK so I got the binary, not compiling yet with symbols - I tried it but there is a chance that my gcc is handling my bof (not sure if it's true but I could'nt make it work)
+- Debugging the original binary with no symbols.
+- I managed to find the location of the "key arg"
+- How? I saw the cmp with 0xcafebabe:
+=> 0x56555654 <+40>:	cmp    DWORD PTR [ebp+0x8],0xcafebabe

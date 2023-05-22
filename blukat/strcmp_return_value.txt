@@ -1,0 +1,10 @@
+Breakpoint 1 at [34m0x555555555292[m
+
+Breakpoint 1, [33mmain[m () at [32mblukat.c[m:21
+21		if(!strcmp(password, buf)){
+$1 = 1
+A debugging session is active.
+
+	Inferior 1 [process 187124] will be killed.
+
+Quit anyway? (y or n) [answered Y; input not from terminal]
