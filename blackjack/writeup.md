@@ -798,3 +798,28 @@ void fileresults() //Prints results into Blackjack.txt file in program directory
 ```
 - I get connection refused when running `nc pwnable.kr 9009` :O
 - I guess the challange is down for now.. I'll be back!
+- I'm back!
+- I found a vulnrability in the code, let's take a look at this function:
+```c
+int betting() //Asks user amount to bet
+{
+ printf("\n\nEnter Bet: $");
+ scanf("%d", &bet);
+ 
+ if (bet > cash) //If player tries to bet more money than player has
+ {
+        printf("\nYou cannot bet more money than you have.");
+        printf("\nEnter Bet: ");
+        scanf("%d", &bet);
+        return bet;
+ }
+ else return bet;
+} // End Function
+```
+- If you bet a value that is greater then your cash, the code prints `"You cannot bet more money than you have."`
+    + The funny thing is that after that, the code just asks you for a bet, *without* checking the value again!
+- So, giving a large value, let's say over a million once, then giving another value over a million will change the cash to that value
+- After so, winning once will print the flag :)
+
+# YaY_I_AM_A_MILLIONARE_LOL
+# pwned.
