@@ -26,4 +26,5 @@ after a few tries I managed to run /bin/cat! but because I was inside of gdb it 
 
 - I ran the the program without gdb, and after a few tries I made it :)
 
-FLAG: sorry mom... I FORGOT to check duplicate numbers... :(
+# sorry mom... I FORGOT to check duplicate numbers... :(
+# pwned.

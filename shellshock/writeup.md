@@ -32,7 +32,9 @@ export fnc='() { echo "testing"; }; echo "test";'
 - Nice! got the following output:
 only if I knew CVE-2014-6271 ten years ago..!!
 Segmentation fault (core dumped)
-- FLAG: only if I knew CVE-2014-6271 ten years ago..!!
+
+# FLAG: only if I knew CVE-2014-6271 ten years ago..!!
+# pwned.
 
 
  

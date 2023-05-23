@@ -17,4 +17,6 @@ fd is equal to "open("/home/mistake/password",O_RDONLY,0400) < 0" - which is not
 - So, I used gdb, to see what happends to the pair of strings "aaaaaaaaaa" as the password and "bbbbbbbbbb" as the key.
 - After the xor, the b, turns into c - and "aaaaaaaaaa" is not equal to "bbbbbbbbbb" - but that's it, I did it.
 - I ran the binary on the server with the password "cccccccccc" and the key as "bbbbbbbbbb" - And got the flag! :)
-- "Mommy, the operator priority always confuses me :("
+
+# "Mommy, the operator priority always confuses me :("
+# pwned.
